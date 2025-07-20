@@ -1,6 +1,7 @@
 """
 middleware class that logs request details.
 """
+from django.core.cache import cache
 from django.http import HttpResponseForbidden
 from django.utils.deprecation import MiddlewareMixin
 import logging
@@ -38,10 +39,25 @@ class RequestLoggingMiddleware(MiddlewareMixin):
             ip = request.META.get('REMOTE_ADDR')
         return ip
     
-        
+
     def __call__(self, request):
         ip_address = self.get_client_ip(request)
-        
-        # Check if IP is blocked
+
         if BlockedIP.objects.filter(ip_address=ip_address).exists():
             return HttpResponseForbidden("Your IP address has been blocked.")
+        
+        cache_key = f'geo_{ip_address}'
+        geodata = cache.get(cache_key)
+
+        if not geodata:
+            geodata = self.geo_api.get_geolocation(ip_address)
+            cache.set(cache_key, geodata, 86400)
+
+        RequestLog.objects.create(
+            ip_address=ip_address,
+            path=request.path,
+            country=geodata.get('country_name'),
+            city=geodata.get('city')
+        )
+
+        return self.get_response(request)
