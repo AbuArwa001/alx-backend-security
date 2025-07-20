@@ -37,6 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'ip_tracking',
+    'ip_tracking.app_security',  # Ensure this app is included
+    'django_celery_beat',  # For periodic tasks
+    'django_celery_results',  # For storing task results
+
 ]
 
 MIDDLEWARE = [
@@ -124,3 +129,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Rate limiting settings
 RATELIMIT_ENABLE = True
 RATELIMIT_VIEW = 'ip_tracking.views.CustomLoginView'
+# Celery Config
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
