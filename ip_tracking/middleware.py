@@ -1,9 +1,10 @@
 """
 middleware class that logs request details.
 """
+from django.http import HttpResponseForbidden
 from django.utils.deprecation import MiddlewareMixin
 import logging
-from ip_tracking.models import RequestLog
+from ip_tracking.models import BlockedIP, RequestLog
 from django.utils import timezone
 
 class RequestLoggingMiddleware(MiddlewareMixin):
@@ -36,3 +37,11 @@ class RequestLoggingMiddleware(MiddlewareMixin):
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+    
+        
+    def __call__(self, request):
+        ip_address = self.get_client_ip(request)
+        
+        # Check if IP is blocked
+        if BlockedIP.objects.filter(ip_address=ip_address).exists():
+            return HttpResponseForbidden("Your IP address has been blocked.")
